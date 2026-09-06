@@ -1,0 +1,3 @@
+@echo off
+echo Starting AI Diagnostic Support System Backend Server...
+.\venv\Scripts\python.exe run_server.py
