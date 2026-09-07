@@ -126,7 +126,7 @@ export const ResultsPage: React.FC<ResultsPageProps> = ({ result, onNavigate }) 
       { stepNumber: 3, title: 'Initiate Treatment & Dosage', detail: 'Take prescribed medication according to exact dosage schedules.' },
       { stepNumber: 4, title: 'Re-evaluate in 48-72 Hours', detail: 'Re-assess symptom resolution or seek urgent emergency care if condition worsens.' }
     ],
-    safetyDisclaimer: 'Notice: This AI diagnostic support system is designed to assist healthcare decision-making in Nigeria. Prescribed drug guidance should be reviewed with a registered medical practitioner or pharmacist.',
+    safetyDisclaimer: 'This AI health checker provides diagnostic probabilities and decision-support guidance. It does not replace professional medical diagnosis. If you have severe symptoms, chest pain, or emergency warning signs, please call emergency services immediately.',
     evaluatedAt: new Date().toISOString().substring(0, 10)
   };
 
