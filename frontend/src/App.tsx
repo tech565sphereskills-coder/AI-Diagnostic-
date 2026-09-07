@@ -131,7 +131,7 @@ function AppContent() {
           {currentPage === 'dashboard' && (
             <DashboardPage
               onNavigate={setCurrentPage}
-              onSelectAssessment={(_asm) => {}}
+              onSelectAssessment={(_asm) => { }}
               onSelectCategory={(_catId) => setSelectedCategory(null)}
               user={user}
             />
@@ -182,7 +182,7 @@ function AppContent() {
           {currentPage === 'history' && (
             <AssessmentHistoryPage
               onNavigate={setCurrentPage}
-              onSelectAssessment={(_asm) => {}}
+              onSelectAssessment={(_asm) => { }}
             />
           )}
 

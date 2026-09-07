@@ -72,30 +72,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, isAuthenticated }) =
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-3 text-xs">
-          {isAuthenticated ? (
+          <button
+            onClick={() => handleNavClick('intro')}
+            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center space-x-1.5 cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Try Assessment (No Login Required)</span>
+          </button>
+          {!isAuthenticated && (
             <button
-              onClick={() => handleNavClick('dashboard')}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center space-x-1.5 cursor-pointer"
+              onClick={() => handleNavClick('login')}
+              className="px-3.5 py-2 text-slate-600 hover:text-emerald-600 font-semibold transition-colors cursor-pointer"
             >
-              <span>Go to Dashboard</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              Sign In
             </button>
-          ) : (
-            <>
-              <button
-                onClick={() => handleNavClick('login')}
-                className="px-4 py-2 text-slate-700 hover:text-emerald-600 font-bold transition-colors cursor-pointer"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => handleNavClick('register')}
-                className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center space-x-1.5 cursor-pointer"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>Get Started</span>
-              </button>
-            </>
           )}
         </div>
 

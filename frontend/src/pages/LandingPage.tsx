@@ -72,7 +72,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, isAuthenti
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 pt-2">
                 <button
-                  onClick={() => onNavigate(isAuthenticated ? 'categories' : 'register')}
+                  onClick={() => onNavigate('intro')}
                   className="px-8 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-emerald-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
                 >
                   <Stethoscope className="w-5 h-5" />
@@ -240,7 +240,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, isAuthenti
 
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={() => onNavigate(isAuthenticated ? 'categories' : 'register')}
+                  onClick={() => onNavigate('intro')}
                   className="px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition-all flex items-center space-x-2 cursor-pointer"
                 >
                   <Stethoscope className="w-4 h-4" />
@@ -358,7 +358,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, isAuthenti
             <h2 className="text-3xl font-extrabold font-outfit">Experience Zainab Sulaiman's AI CDSS Project</h2>
             <p className="text-sm text-emerald-200">Take a structured assessment today and receive instant AI-powered diagnostic recommendations.</p>
             <button
-              onClick={() => onNavigate(isAuthenticated ? 'categories' : 'register')}
+              onClick={() => onNavigate('intro')}
               className="px-8 py-4 bg-white text-slate-950 hover:bg-slate-100 font-extrabold text-sm rounded-2xl shadow-xl transition-all inline-flex items-center space-x-2 cursor-pointer"
             >
               <Stethoscope className="w-5 h-5 text-emerald-600" />
