@@ -16,7 +16,21 @@ export const authService = {
       }
       return { token: tokenVal, user: userObj };
     } catch (err) {
-      // Fallback for offline demo mode
+      // Check local registered users database
+      const regDb = JSON.parse(localStorage.getItem('aid_registered_users_db') || '[]');
+      const regMatch = regDb.find((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      if (regMatch) {
+        if (regMatch.password === password) {
+          const token = `token-${regMatch.user.role}-${Date.now()}`;
+          localStorage.setItem('aid_auth_token', token);
+          localStorage.setItem('aid_user_profile', JSON.stringify(regMatch.user));
+          return { token, user: regMatch.user };
+        } else {
+          throw new Error('Invalid password credentials for this account.');
+        }
+      }
+
+      // Fallback for demo users
       const matched = MOCK_USERS.find((u) => u.email.toLowerCase() === email.toLowerCase());
       if (matched && password.length >= 6) {
         const token = `demo-token-${matched.role}-${Date.now()}`;
@@ -43,29 +57,26 @@ export const authService = {
     }
   },
 
-  async register(name: string, email: string, password: string): Promise<{ token: string; user: User }> {
+  async register(name: string, email: string, password: string): Promise<{ success: boolean; user: User }> {
     try {
       const response = await apiClient.post('/auth/register', { name, email, password });
       const data = response.data;
-      
-      // Auto login after registration
-      try {
-        const loginRes = await this.login(email, password);
-        return loginRes;
-      } catch (loginErr) {
-        const userObj: User = data.user || (data.id ? data : {
-          id: `usr-${Date.now()}`,
-          name,
-          email,
-          role: 'user',
-          createdAt: new Date().toISOString().substring(0, 10),
-          assessmentCount: 0
-        });
-        const tokenVal: string = data.token || data.access_token || `token-${Date.now()}`;
-        localStorage.setItem('aid_auth_token', tokenVal);
-        localStorage.setItem('aid_user_profile', JSON.stringify(userObj));
-        return { token: tokenVal, user: userObj };
-      }
+      const userObj: User = data.user || (data.id ? data : {
+        id: `usr-${Date.now()}`,
+        name,
+        email,
+        role: 'user',
+        createdAt: new Date().toISOString().substring(0, 10),
+        assessmentCount: 0
+      });
+
+      // Register user into local DB pool for login validation
+      const existing = JSON.parse(localStorage.getItem('aid_registered_users_db') || '[]');
+      const filtered = existing.filter((u: any) => u.email.toLowerCase() !== email.toLowerCase());
+      filtered.push({ name, email: email.toLowerCase(), password, user: userObj });
+      localStorage.setItem('aid_registered_users_db', JSON.stringify(filtered));
+
+      return { success: true, user: userObj };
     } catch (err) {
       const newUser: User = {
         id: `usr-${Date.now()}`,
@@ -75,10 +86,15 @@ export const authService = {
         createdAt: new Date().toISOString().substring(0, 10),
         assessmentCount: 0
       };
-      const token = `demo-token-user-${Date.now()}`;
-      localStorage.setItem('aid_auth_token', token);
-      localStorage.setItem('aid_user_profile', JSON.stringify(newUser));
-      return { token, user: newUser };
+
+      const existing = JSON.parse(localStorage.getItem('aid_registered_users_db') || '[]');
+      if (existing.some((u: any) => u.email.toLowerCase() === email.toLowerCase())) {
+        throw new Error('Email is already registered. Please sign in with your credentials.');
+      }
+      existing.push({ name, email: email.toLowerCase(), password, user: newUser });
+      localStorage.setItem('aid_registered_users_db', JSON.stringify(existing));
+
+      return { success: true, user: newUser };
     }
   },
 

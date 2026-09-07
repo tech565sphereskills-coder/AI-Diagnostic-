@@ -54,7 +54,9 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
     try {
       await register(fullName, email, password);
-      onNavigate('dashboard');
+      sessionStorage.setItem('registered_email', email);
+      sessionStorage.setItem('registered_success_msg', 'Account registered successfully! Please sign in with your credentials to validate your account.');
+      onNavigate('login');
     } catch (err: any) {
       setErrorMessage(err.message || 'Registration failed.');
     } finally {

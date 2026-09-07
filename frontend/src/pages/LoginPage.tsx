@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BrainCircuit,
   Lock,
@@ -8,6 +8,7 @@ import {
   ArrowRight,
   ShieldCheck,
   AlertCircle,
+  CheckCircle2,
   GraduationCap,
   Sparkles
 } from 'lucide-react';
@@ -27,7 +28,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [forgotOpen, setForgotOpen] = useState(false);
+
+  useEffect(() => {
+    const regEmail = sessionStorage.getItem('registered_email');
+    const regMsg = sessionStorage.getItem('registered_success_msg');
+    if (regEmail) {
+      setEmail(regEmail);
+      setPassword('');
+      if (regMsg) setSuccessMessage(regMsg);
+      sessionStorage.removeItem('registered_email');
+      sessionStorage.removeItem('registered_success_msg');
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +156,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
                 </button>
               </div>
             </div>
+
+            {/* Registration Success Notification Banner */}
+            {successMessage && (
+              <div className="mb-4 p-3.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs flex items-center space-x-2 animate-in fade-in duration-200 shadow-xs">
+                <CheckCircle2 className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+                <span className="font-semibold">{successMessage}</span>
+              </div>
+            )}
 
             {/* API Error Alert */}
             {errorMessage && (
