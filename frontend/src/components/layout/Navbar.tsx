@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrainCircuit, Sparkles, ArrowRight, GraduationCap, Menu, X, Home, Layers, Compass, LogIn, LayoutDashboard } from 'lucide-react';
+import { BrainCircuit, Sparkles, GraduationCap, Menu, X, Home, Layers, Compass, LogIn, LayoutDashboard } from 'lucide-react';
 import type { ActivePage } from '../../types';
 
 interface NavbarProps {
@@ -72,20 +72,39 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, isAuthenticated }) =
 
         {/* Desktop Actions */}
         <div className="hidden md:flex items-center space-x-3 text-xs">
-          <button
-            onClick={() => handleNavClick('intro')}
-            className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center space-x-1.5 cursor-pointer"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Try Assessment (No Login Required)</span>
-          </button>
-          {!isAuthenticated && (
-            <button
-              onClick={() => handleNavClick('login')}
-              className="px-3.5 py-2 text-slate-600 hover:text-emerald-600 font-semibold transition-colors cursor-pointer"
-            >
-              Sign In
-            </button>
+          {isAuthenticated ? (
+            <>
+              <button
+                onClick={() => handleNavClick('intro')}
+                className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center space-x-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Start Assessment</span>
+              </button>
+              <button
+                onClick={() => handleNavClick('dashboard')}
+                className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-colors cursor-pointer flex items-center space-x-1.5"
+              >
+                <LayoutDashboard className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Dashboard</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => handleNavClick('login')}
+                className="px-4 py-2 text-slate-700 hover:text-emerald-600 font-bold transition-colors cursor-pointer"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => handleNavClick('register')}
+                className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center space-x-1.5 cursor-pointer"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Register / Get Started</span>
+              </button>
+            </>
           )}
         </div>
 
@@ -146,13 +165,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, isAuthenticated }) =
 
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             {isAuthenticated ? (
-              <button
-                onClick={() => handleNavClick('dashboard')}
-                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm"
-              >
-                <span>Access Clinical Dashboard</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
+              <>
+                <button
+                  onClick={() => handleNavClick('intro')}
+                  className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center space-x-2 text-sm"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Start New Assessment</span>
+                </button>
+                <button
+                  onClick={() => handleNavClick('dashboard')}
+                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold rounded-xl transition-colors flex items-center justify-center space-x-2 text-sm"
+                >
+                  <LayoutDashboard className="w-4 h-4 text-emerald-600" />
+                  <span>Access Clinical Dashboard</span>
+                </button>
+              </>
             ) : (
               <>
                 <button
@@ -167,7 +195,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onNavigate, isAuthenticated }) =
                   className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl shadow-md shadow-emerald-600/20 transition-all flex items-center justify-center space-x-2 text-sm"
                 >
                   <Sparkles className="w-4 h-4" />
-                  <span>Get Started</span>
+                  <span>Register / Get Started</span>
                 </button>
               </>
             )}
