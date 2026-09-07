@@ -556,6 +556,35 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
       ];
     }
 
+    // Apply Clinical Safety Filters for Allergies & Medical History
+    const hasPenicillinAllergy = selectedAllergies.some((a) => a.toLowerCase().includes('penicillin') || a.toLowerCase().includes('amoxicillin'));
+    const hasUlcerRisk = selectedChronic.some((c) => c.toLowerCase().includes('ulcer') || c.toLowerCase().includes('gastritis')) || selectedAllergies.some((a) => a.toLowerCase().includes('nsaid') || a.toLowerCase().includes('aspirin'));
+
+    generatedMeds = generatedMeds.map((med) => {
+      const nameLower = med.name.toLowerCase();
+      if (hasPenicillinAllergy && (nameLower.includes('amoxicillin') || nameLower.includes('augmentin') || nameLower.includes('penicillin'))) {
+        return {
+          name: 'Azithromycin',
+          dosage: '500mg',
+          frequency: 'Once Daily after food (OD)',
+          duration: '3 to 5 Days',
+          instructions: 'CLINICAL SAFETY ALERT: Substituted for Augmentin/Amoxicillin due to documented Penicillin allergy.',
+          purpose: 'Macrolide antibacterial alternative for Penicillin-allergic patients.'
+        };
+      }
+      if (hasUlcerRisk && (nameLower.includes('ibuprofen') || nameLower.includes('diclofenac') || nameLower.includes('aspirin'))) {
+        return {
+          name: 'Paracetamol (Acetaminophen)',
+          dosage: '1000mg',
+          frequency: '8-Hourly as needed (TDS)',
+          duration: '3 to 5 Days',
+          instructions: 'CLINICAL SAFETY ALERT: NSAID/Ibuprofen avoided due to stomach ulcer / gastric erosion risk.',
+          purpose: 'Gastric-safe analgesic and fever reducer.'
+        };
+      }
+      return med;
+    });
+
     const fallbackResult: AIDiagnosticAssessment = {
       id: `ASM-2026-${Math.floor(1000 + Math.random() * 9000)}`,
       patientId: user?.id || 'PT-2026-REG',

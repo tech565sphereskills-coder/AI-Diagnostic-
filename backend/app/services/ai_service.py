@@ -416,11 +416,52 @@ class MockAIService(BaseAIService):
             next_steps=next_s
         )
 
+def apply_clinical_safety_filters(res: AIAnalysisResponse, allergies: list, history: list) -> AIAnalysisResponse:
+    allergies_lower = [str(a).lower() for a in allergies]
+    history_lower = [str(h).lower() for h in history]
+
+    has_penicillin_allergy = any('penicillin' in a or 'amoxicillin' in a for a in allergies_lower)
+    has_ulcer_history = any('ulcer' in h or 'gastritis' in h for h in history_lower) or any('nsaid' in a or 'aspirin' in a for a in allergies_lower)
+
+    filtered_meds = []
+    for med in res.prescribed_medications:
+        name_lower = med.name.lower()
+
+        # Rule 1: Penicillin Allergy Replacement
+        if has_penicillin_allergy and any(p in name_lower for p in ['amoxicillin', 'augmentin', 'ampicillin', 'penicillin']):
+            filtered_meds.append(
+                MedicationAIItem(
+                    name="Azithromycin",
+                    dosage="500mg",
+                    frequency="Once Daily (OD after food)",
+                    duration="3 to 5 Days",
+                    instructions="CLINICAL SAFETY ALERT: Substituted for Penicillin/Augmentin due to documented Penicillin allergy.",
+                    purpose="Macrolide antibacterial alternative for penicillin-allergic patients."
+                )
+            )
+        # Rule 2: Gastric Ulcer / NSAID Allergy Replacement
+        elif has_ulcer_history and any(n in name_lower for n in ['ibuprofen', 'diclofenac', 'naproxen', 'aspirin', 'indomethacin']):
+            filtered_meds.append(
+                MedicationAIItem(
+                    name="Paracetamol (Acetaminophen)",
+                    dosage="1000mg",
+                    frequency="8-Hourly as needed (TDS)",
+                    duration="3 to 5 Days",
+                    instructions="CLINICAL SAFETY ALERT: NSAID/Ibuprofen avoided due to gastric ulcer / mucosal erosion risk.",
+                    purpose="Gastric-safe analgesic and fever reducer."
+                )
+            )
+        else:
+            filtered_meds.append(med)
+
+    res.prescribed_medications = filtered_meds
+    return res
+
 class RealAIService(BaseAIService):
     async def analyze_assessment(self, payload: Dict[str, Any]) -> AIAnalysisResponse:
         system_prompt = (
-            "You are an expert AI Diagnostic and Recommendation engine for healthcare in Nigeria. "
-            "You analyze patient questionnaire data (symptoms, duration, severity 1-10, age, biological sex, vitals, medical history) and return ONLY a valid JSON object matching this exact schema:\n"
+            "You are an expert AI Diagnostic and Recommendation engine for healthcare. "
+            "You analyze patient questionnaire data (symptoms, duration, severity 1-10, age, biological sex, vitals, medical history, allergies) and return ONLY a valid JSON object matching this exact schema:\n"
             "{\n"
             '  "result_title": "string",\n'
             '  "result_summary": "string starting with Based on your responses...",\n'
@@ -435,10 +476,44 @@ class RealAIService(BaseAIService):
         )
 
         headers = {
-            "Authorization": f"Bearer {settings.AI_API_KEY}",
             "Content-Type": "application/json"
         }
 
+        allergies = payload.get("medicalHistory", {}).get("allergies", [])
+        history = payload.get("medicalHistory", {}).get("chronicConditions", [])
+
+        # Check if Google Gemini API URL is configured
+        if "generativelanguage.googleapis.com" in settings.AI_BASE_URL or "gemini" in settings.AI_MODEL.lower():
+            gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.AI_MODEL}:generateContent?key={settings.AI_API_KEY}"
+            gemini_body = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": f"{system_prompt}\n\nPATIENT EVALUATION DATA:\n{json.dumps(payload)}"}
+                        ]
+                    }
+                ]
+            }
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    res = await client.post(gemini_url, headers=headers, json=gemini_body)
+                    res.raise_for_status()
+                    data = res.json()
+                    content = data["candidates"][0]["content"]["parts"][0]["text"].strip()
+                    if content.startswith("```"):
+                        content = content.replace("```json", "").replace("```", "").strip()
+
+                    parsed = json.loads(content)
+                    ai_res = AIAnalysisResponse(**parsed)
+                    return apply_clinical_safety_filters(ai_res, allergies, history)
+            except Exception as e:
+                logger.error(f"Gemini API call failed: {str(e)}. Falling back to MockAIService.")
+                mock_fallback = MockAIService()
+                res = await mock_fallback.analyze_assessment(payload)
+                return apply_clinical_safety_filters(res, allergies, history)
+
+        # Standard OpenAI / Groq compatibility endpoint
+        headers["Authorization"] = f"Bearer {settings.AI_API_KEY}"
         body = {
             "model": settings.AI_MODEL,
             "messages": [
@@ -458,13 +533,16 @@ class RealAIService(BaseAIService):
                     content = content.replace("```json", "").replace("```", "").strip()
 
                 parsed = json.loads(content)
-                return AIAnalysisResponse(**parsed)
+                ai_res = AIAnalysisResponse(**parsed)
+                return apply_clinical_safety_filters(ai_res, allergies, history)
         except Exception as e:
             logger.error(f"RealAIService call failed: {str(e)}. Falling back to MockAIService.")
             mock_fallback = MockAIService()
-            return await mock_fallback.analyze_assessment(payload)
+            res = await mock_fallback.analyze_assessment(payload)
+            return apply_clinical_safety_filters(res, allergies, history)
 
 def get_ai_service() -> BaseAIService:
     if settings.USE_MOCK_AI or not settings.AI_API_KEY:
         return MockAIService()
     return RealAIService()
+
