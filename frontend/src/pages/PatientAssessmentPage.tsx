@@ -46,14 +46,9 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
   const [phone, setPhone] = useState('');
 
   // Requirement 3 & 4 & 5: Symptoms (select/describe, duration, 1-10 severity)
-  const [symptoms, setSymptoms] = useState<Symptom[]>([
-    { id: '1', name: 'Fever', severity: 'Severe', severityRating: 8, duration: '4 days', notes: 'High spiking temp with chills' },
-    { id: '2', name: 'Headache', severity: 'Moderate', severityRating: 6, duration: '3 days', notes: 'Frontal throbbing pain' }
-  ]);
-  const [symptomDescription, setSymptomDescription] = useState(
-    'Persistent high fever with chills, severe body aches, frontal headache, and fatigue for 4 days.'
-  );
-  const [overallDuration, setOverallDuration] = useState('4–7 days');
+  const [symptoms, setSymptoms] = useState<Symptom[]>([]);
+  const [symptomDescription, setSymptomDescription] = useState('');
+  const [overallDuration, setOverallDuration] = useState('1 to 3 days');
   const [customSymptomInput, setCustomSymptomInput] = useState('');
 
   // Requirement 6: Medical History
@@ -64,11 +59,11 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
 
   // Requirement 7: Additional information (Blood Pressure & Temperature)
   const [vitals, setVitals] = useState<VitalSigns>({
-    temperature: 38.8,
-    systolicBP: 124,
-    diastolicBP: 82,
-    heartRate: 98,
-    respiratoryRate: 20,
+    temperature: 36.8,
+    systolicBP: 120,
+    diastolicBP: 80,
+    heartRate: 76,
+    respiratoryRate: 18,
     oxygenSaturation: 98,
     weight: 68,
     height: 168
@@ -198,23 +193,49 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
     setTimeout(() => setProcessingStep(4), 1800);
     setTimeout(() => setProcessingStep(5), 2400);
 
-    // Dynamic Clinical Evaluator based on patient input
-    const symptomsJoined = (symptomDescription + ' ' + symptoms.map(s => s.name).join(' ')).toLowerCase();
+    // Dynamic Clinical Category Scoring Evaluator
+    const textToAnalyze = (symptomDescription + ' ' + symptoms.map(s => `${s.name} ${s.notes || ''}`).join(' ')).toLowerCase();
     const vitalsInfo = `BP ${vitals.systolicBP}/${vitals.diastolicBP} mmHg, Temp ${vitals.temperature}°C`;
+
+    const scores: Record<string, number> = {
+      ulcer: 0,
+      respiratory: 0,
+      hypertension: 0,
+      gastroenteritis: 0,
+      uti: 0,
+      diabetes: 0,
+      joint: 0,
+      dermatitis: 0,
+      dental: 0,
+      malaria: 0
+    };
+
+    if (textToAnalyze.includes('stomach') || textToAnalyze.includes('ulcer') || textToAnalyze.includes('heartburn') || textToAnalyze.includes('acid') || textToAnalyze.includes('epigastric') || textToAnalyze.includes('gastric') || textToAnalyze.includes('gastritis')) scores.ulcer += 10;
+    if (textToAnalyze.includes('cough') || textToAnalyze.includes('sore throat') || textToAnalyze.includes('throat') || textToAnalyze.includes('chest') || textToAnalyze.includes('catarrh') || textToAnalyze.includes('bronchitis') || textToAnalyze.includes('sputum') || textToAnalyze.includes('wheezing')) scores.respiratory += 10;
+    if (textToAnalyze.includes('bp') || textToAnalyze.includes('hypertension') || textToAnalyze.includes('dizziness') || textToAnalyze.includes('palpitations') || vitals.systolicBP >= 140 || vitals.diastolicBP >= 90) scores.hypertension += 10;
+    if (textToAnalyze.includes('diarrhea') || textToAnalyze.includes('vomit') || textToAnalyze.includes('purging') || textToAnalyze.includes('stool') || textToAnalyze.includes('gastroenteritis') || textToAnalyze.includes('food poisoning')) scores.gastroenteritis += 10;
+    if (textToAnalyze.includes('urine') || textToAnalyze.includes('urinary') || textToAnalyze.includes('dysuria') || textToAnalyze.includes('burning urination') || textToAnalyze.includes('flank')) scores.uti += 10;
+    if (textToAnalyze.includes('diabetes') || textToAnalyze.includes('sugar') || textToAnalyze.includes('thirst') || textToAnalyze.includes('frequent urination')) scores.diabetes += 10;
+    if (textToAnalyze.includes('joint') || textToAnalyze.includes('arthritis') || textToAnalyze.includes('waist') || textToAnalyze.includes('knee') || textToAnalyze.includes('back pain') || textToAnalyze.includes('swelling')) scores.joint += 10;
+    if (textToAnalyze.includes('rash') || textToAnalyze.includes('itching') || textToAnalyze.includes('eczema') || textToAnalyze.includes('hives') || textToAnalyze.includes('skin') || textToAnalyze.includes('boils')) scores.dermatitis += 10;
+    if (textToAnalyze.includes('tooth') || textToAnalyze.includes('dental') || textToAnalyze.includes('gum') || textToAnalyze.includes('jaw')) scores.dental += 10;
+    if (textToAnalyze.includes('fever') || textToAnalyze.includes('chills') || textToAnalyze.includes('rigors') || textToAnalyze.includes('malaria') || vitals.temperature >= 38.0) scores.malaria += 8;
+
+    const highestCategory = Object.entries(scores).reduce((max, curr) => curr[1] > max[1] ? curr : max, ['malaria', -1])[0];
     
     let generatedConditions: any[] = [];
     let generatedMeds: any[] = [];
     let generatedLabs: any[] = [];
     let generatedRecs: string[] = [];
 
-    if (symptomsJoined.includes('stomach') || symptomsJoined.includes('ulcer') || symptomsJoined.includes('heartburn') || symptomsJoined.includes('acid') || symptomsJoined.includes('epigastric')) {
+    if (highestCategory === 'ulcer') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Peptic Ulcer Disease (PUD) / Acute Gastritis',
           confidence: 91,
           riskLevel: 'Moderate',
-          supportingFactors: [`Epigastric discomfort reported: "${symptomDescription}"`, `Symptom duration of ${overallDuration}`, 'No signs of acute gastrointestinal bleeding'],
+          supportingFactors: [`Epigastric discomfort reported: "${symptomDescription || 'Stomach distress'}"`, `Symptom duration of ${overallDuration}`, 'No signs of acute gastrointestinal bleeding'],
           clinicalObservations: ['Epigastric tenderness on palpation', 'Gastric hyperacidity symptoms reported'],
           labFindings: ['Helicobacter pylori stool antigen / urea breath test recommended']
         },
@@ -243,14 +264,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Eat smaller, frequent meals and avoid lying down within 2 hours after eating.',
         'Seek EMERGENCY CARE immediately if experiencing black tarry stools or vomiting blood.'
       ];
-    } else if (symptomsJoined.includes('cough') || symptomsJoined.includes('sore throat') || symptomsJoined.includes('chest') || symptomsJoined.includes('catarrh') || symptomsJoined.includes('bronchitis')) {
+    } else if (highestCategory === 'respiratory') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Acute Bronchitis / Lower Respiratory Tract Infection',
           confidence: 89,
           riskLevel: 'Moderate',
-          supportingFactors: [`Airway symptoms reported: "${symptomDescription}"`, `Temperature recorded at ${vitals.temperature}°C`, `Duration of ${overallDuration}`],
+          supportingFactors: [`Airway symptoms reported: "${symptomDescription || 'Respiratory symptoms'}"`, `Temperature recorded at ${vitals.temperature}°C`, `Duration of ${overallDuration}`],
           clinicalObservations: ['Mucosal bronchial inflammation', 'Rhinorrhea and cough reflex intact'],
           labFindings: ['Chest X-Ray (PA view) and Sputum Culture']
         },
@@ -279,14 +300,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Increase daily fluid intake to 3 Litres to thin respiratory secretions.',
         'Seek IMMEDIATE CARE if experiencing severe shortness of breath or blue lips.'
       ];
-    } else if (vitals.systolicBP >= 140 || vitals.diastolicBP >= 90 || symptomsJoined.includes('bp') || symptomsJoined.includes('hypertension') || symptomsJoined.includes('dizziness')) {
+    } else if (highestCategory === 'hypertension') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Primary Essential Hypertension / Elevated Vascular Resistance',
           confidence: 93,
           riskLevel: 'High',
-          supportingFactors: [`Elevated BP recorded: ${vitals.systolicBP}/${vitals.diastolicBP} mmHg`, `Symptoms reported: "${symptomDescription}"`, `Age ${age} years`],
+          supportingFactors: [`Elevated BP recorded: ${vitals.systolicBP}/${vitals.diastolicBP} mmHg`, `Symptoms reported: "${symptomDescription || 'Hypertensive symptoms'}"`, `Age ${age} years`],
           clinicalObservations: ['Elevated arterial blood pressure readings', 'Vascular resistance elevated'],
           labFindings: ['Fasting Lipid Profile, ECG, and Renal Function (E/U/Cr)']
         },
@@ -316,14 +337,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Engage in 30 minutes of moderate aerobic exercise (walking, swimming) 5 days a week.',
         'Seek IMMEDIATE EMERGENCY CARE if experiencing crushing chest pain, arm numbness, or severe shortness of breath.'
       ];
-    } else if (symptomsJoined.includes('diarrhea') || symptomsJoined.includes('vomit') || symptomsJoined.includes('purging') || symptomsJoined.includes('stool') || symptomsJoined.includes('gastroenteritis')) {
+    } else if (highestCategory === 'gastroenteritis') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Acute Infective Gastroenteritis & Dehydration Risk',
           confidence: 90,
           riskLevel: 'High',
-          supportingFactors: [`Intestinal symptoms reported: "${symptomDescription}"`, `Duration of ${overallDuration}`, 'Fluid loss from frequent loose bowel movements'],
+          supportingFactors: [`Intestinal symptoms reported: "${symptomDescription || 'Intestinal purging'}"`, `Duration of ${overallDuration}`, 'Fluid loss from frequent loose bowel movements'],
           clinicalObservations: ['Hyperactive bowel sounds', 'Mild abdominal cramping'],
           labFindings: ['Stool Microscopy, Culture & Sensitivity (M/C/S)']
         },
@@ -352,14 +373,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Eat a soft BRAT diet (Bananas, Rice, Applesauce, Toast) while avoiding dairy and fried foods.',
         'Seek IMMEDIATE CARE if unable to keep liquids down or experiencing high persistent fever.'
       ];
-    } else if (symptomsJoined.includes('urine') || symptomsJoined.includes('urinary') || symptomsJoined.includes('dysuria') || symptomsJoined.includes('burning urination')) {
+    } else if (highestCategory === 'uti') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Acute Uncomplicated Urinary Tract Infection (Bacterial Cystitis)',
           confidence: 91,
           riskLevel: 'Moderate',
-          supportingFactors: [`Urinary distress reported: "${symptomDescription}"`, `Biological sex: ${sex}`, `Duration of ${overallDuration}`],
+          supportingFactors: [`Urinary distress reported: "${symptomDescription || 'Urinary symptoms'}"`, `Biological sex: ${sex}`, `Duration of ${overallDuration}`],
           clinicalObservations: ['Suprapubic tenderness', 'Urine cloudiness reported'],
           labFindings: ['Urinalysis (dipstick/microscopy) and Urine Culture (M/C/S)']
         },
@@ -387,14 +408,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Void urine frequently and avoid holding urine for long periods.',
         'Consult doctor if high fever, back/flank pain, or chills develop.'
       ];
-    } else if (symptomsJoined.includes('diabetes') || symptomsJoined.includes('sugar') || symptomsJoined.includes('thirst') || symptomsJoined.includes('frequent urination')) {
+    } else if (highestCategory === 'diabetes') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Suspected Diabetes Mellitus / Impaired Glycemic Control',
           confidence: 88,
           riskLevel: 'High',
-          supportingFactors: [`Glycemic symptoms reported: "${symptomDescription}"`, `Age ${age} years`, `Vitals: ${vitalsInfo}`],
+          supportingFactors: [`Glycemic symptoms reported: "${symptomDescription || 'Hyperglycemic symptoms'}"`, `Age ${age} years`, `Vitals: ${vitalsInfo}`],
           clinicalObservations: ['Osmotic polyuria/polydipsia symptoms present', 'Requires biochemical validation'],
           labFindings: ['Fasting Blood Glucose (FBG) and Glycated Hemoglobin (HbA1c)']
         }
@@ -413,14 +434,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Monitor blood glucose levels regularly using a home glucometer.',
         'Follow up with an endocrinologist or primary physician.'
       ];
-    } else if (symptomsJoined.includes('joint') || symptomsJoined.includes('arthritis') || symptomsJoined.includes('waist') || symptomsJoined.includes('knee') || symptomsJoined.includes('back pain')) {
+    } else if (highestCategory === 'joint') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Acute Musculoskeletal Pain / Inflammatory Arthropathy',
           confidence: 87,
           riskLevel: 'Moderate',
-          supportingFactors: [`Joint/musculoskeletal complaints: "${symptomDescription}"`, `Duration of ${overallDuration}`],
+          supportingFactors: [`Joint/musculoskeletal complaints: "${symptomDescription || 'Joint pains'}"`, `Duration of ${overallDuration}`],
           clinicalObservations: ['Joint tenderness and mild stiffness', 'No systemic signs of septic joint infection'],
           labFindings: ['Radiograph of affected joint and Serum Uric Acid screening']
         }
@@ -440,14 +461,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Avoid strenuous joint-loading activity while resting the affected limb.',
         'Consult orthopedic specialist if joint swelling or deformity increases.'
       ];
-    } else if (symptomsJoined.includes('rash') || symptomsJoined.includes('itching') || symptomsJoined.includes('eczema') || symptomsJoined.includes('hives') || symptomsJoined.includes('skin')) {
+    } else if (highestCategory === 'dermatitis') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Acute Allergic Dermatitis / Urticarial Skin Reaction',
           confidence: 86,
           riskLevel: 'Moderate',
-          supportingFactors: [`Dermal symptoms reported: "${symptomDescription}"`, `Duration of ${overallDuration}`],
+          supportingFactors: [`Dermal symptoms reported: "${symptomDescription || 'Skin itching & rash'}"`, `Duration of ${overallDuration}`],
           clinicalObservations: ['Pruritic cutaneous erythema', 'No mucosal stridor or airway involvement'],
           labFindings: ['Allergy skin patch test and Serum IgE']
         }
@@ -465,14 +486,14 @@ export const PatientAssessmentPage: React.FC<PatientAssessmentPageProps> = ({
         'Identify and eliminate recent potential drug, food, or chemical allergens.',
         'Seek EMERGENCY CARE immediately if experiencing facial swelling or difficulty breathing.'
       ];
-    } else if (symptomsJoined.includes('tooth') || symptomsJoined.includes('dental') || symptomsJoined.includes('gum') || symptomsJoined.includes('jaw')) {
+    } else if (highestCategory === 'dental') {
       generatedConditions = [
         {
           rank: 1,
           conditionName: 'Acute Dental Caries / Periapical Odontogenic Infection',
           confidence: 92,
           riskLevel: 'High',
-          supportingFactors: [`Dental symptoms reported: "${symptomDescription}"`, `Duration of ${overallDuration}`],
+          supportingFactors: [`Dental symptoms reported: "${symptomDescription || 'Tooth pain'}"`, `Duration of ${overallDuration}`],
           clinicalObservations: ['Localized tooth tenderness to percussion', 'Gingival swelling'],
           labFindings: ['Intraoral Periapical / OPG Radiograph']
         }
